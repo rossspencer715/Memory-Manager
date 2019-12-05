@@ -1,0 +1,118 @@
+.TH PROJECT 2
+.SH NAME
+Ross Spencer
+
+.SH FILES
+.B MemoryManager.h
+.RS 3 
+File Creation 
+.RS 3
+Wrote prototypes for all of the methods and objects I utilized in my memory manager, alongside including necessary libraries.
+
+.RE .RE
+.B MemoryManager.cpp 
+.RS 3
+File Creation
+.RS 3
+Implemented the MemoryManager class using the structure in the pdf, with specific methods mentioned after this.
+
+.RE .RE
+.B CMakeLists.txt
+.RS 3
+File Edits
+.RS 3
+Added relative paths to source files in add_library().
+
+.RE .RE
+.B native-calls.cpp
+.RS 3
+File Edits
+.RS 3
+In this file I made a global MemoryManager pointer mem, which makes a new MemoryManager which I then use in all of my NDK methods by invoking its methods then casting the results to their corresponding Java types. As a guide I used Google's resources (4) and JNICookbook (5) heavily. 
+
+.SH REASONS FOR ADDITIONS TO MEMORYMANAGER.CPP
+.RE .RE
+.B Chunk Constructors
+.RS 3
+This struct is how I keep track of chunks of memory in my mem vector (pid is program ID from 0 to max_int to represent a program or -1 to denote it being a hole).
+
+.RE .RE
+.B MemoryManager Constructor/Destructor
+.RS 3
+Sets the wordSize and allocator to the parameters, and initializes other members of the class to 0/nullptr. The destructor clears out my vectors and deletes the initial block of memory made
+
+.RE .RE
+.B initialize
+.RS 3  
+Makes a new chunk of memory to reference throughout my methods and set the memoryLimit, and prime my mem vector with a hole of maximum size to make sure all of my memory is accounted for.
+
+.RE .RE
+.B shutdown
+.RS 3 
+Clears out vectors, deletes initial char[], and resets size and memory limit.
+
+.RE .RE
+.B allocate
+.RS 3 
+Calls the allocator to find the address of the hole to be used then inserts program into hole and adjust hole's address and size.
+
+.RE .RE
+.B free
+.RS 3 
+Frees space allocated to a program by first looking for where it's kept track of in my mem vector, then making its pid -1 to treat it as a hole and combines any holes to the left or the right of the new hole.
+
+.RE .RE
+.B setAllocator
+.RS 3 
+Simple setter function
+
+.RE .RE
+.B dumpMemoryMap
+.RS 3 
+Uses POSIX calls creat, open, write, and close to make the text file, following reference 1 to figure out which system calls to use and reference 2 to find the size of the ints in the string to be added to the file, and reference 3 as a guide for using sprintf with POSIX calls.
+
+.RE .RE
+.B getList
+.RS 3 
+Adds the address and size of all holes in the mem vector (with pid -1), then inserts the size into the beginning. Since my vector is on the stack, I was getting issues with the tests when they try to delete the list returned by it, so I made a copy array in the heap to fix this issue.
+
+.RE .RE
+.B getBitmap
+.RS 3 
+This one is broken for now but should return a map of bits each representing 1 byte with a 1 if it's taken or 0 if it's free.
+
+.RE .RE
+.B getWordSize/getMemoryStart/getMemoryLimit
+.RS 3 
+Simple getter functions
+
+.RE .RE
+.B worstFit
+.RS 3 
+looks for the hole that fits the sizeInWords and is larger than the current worstFitty, then returns
+
+
+.SH TESTING
+
+.B I used cc to make the library as in exercise 2 and gcc to compile with C++11. I ran each of the sample tests to make sure my input was correct and messed around in my main to test edge cases. Each of the correct values in the unit tests matched my output, disregarding my broken bitmap. I added the -g flag to compile so that I could run it in Valgrind, where I had 0 memory leaks :)
+
+.SH BUGS
+.B Bitmap prints all 0s but even if it didn't it would be in big-Endian since I couldn't figure out the bitshifting. Android app is buggy and sometimes crashes from UTF8 string errors I can't track down. I spent my entire spring break and the week before it and still couldn't get everything working :(
+
+Update 10:37PM: Fixed issue with tons of 0s in the name of chunks by using sprintf to print the value of pointers returned by allocate to a string first. App seems to work perfectly now :)
+ 
+.SH LINK
+.B unlisted video - 
+
+can be located at https://youtu.be/2nBYJ6UXa9k
+
+.SH REFERENCES
+1-https://www.ibm.com/support/knowledgecenter/en/SSLTBW_2.3.0/com.ibm.zos.v2r3.bpxbd00/rtcre.htm
+
+2-https://stackoverflow.com/questions/1489830/efficient-way-to-determine-number-of-digits-in-an-integer
+
+3-https://www.geeksforgeeks.org/posix-shared-memory-api/
+
+4-https://developer.android.com/ndk/guides/concepts 
+
+5-http://jnicookbook.owsiak.org/recipe-No-020/
